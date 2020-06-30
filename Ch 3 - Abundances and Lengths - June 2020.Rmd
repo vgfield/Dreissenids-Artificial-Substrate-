@@ -356,6 +356,13 @@ fit_nbinom <- glmmTMB(ABUNDANCE ~ WEEKS_IN + YEARS_INVADED + (1|LAKE), data=sum.
 summary(fit_nbinom)
 ```
 
+```{r, model interpretation}
+fixef(fit_nbinom) #pulls fixed effect coefficients
+
+exp(0.05118) # equals 1.052; increasing `WEEKS_IN` by 1 multiplies the mean value of `Count` by 1.052, or an increase of 5%
+exp(-0.01167) # equals .99; increasing `YEARS_INVADED` by 1 multiplies the mean value of `Count` by .99, or a decrease of 1%
+```
+
 ```{r, model diagnostics 1}
 residuals<-residuals(fit_nbinom, type = c("response", "pearson"))
 plot(residuals)
