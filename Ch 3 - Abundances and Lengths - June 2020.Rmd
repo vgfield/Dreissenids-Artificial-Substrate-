@@ -338,5 +338,36 @@ dev.off()
 ## Re-organize dataframe 
 
 ```{r}
+write.csv(sum.data, "./data_processed/sum.data.csv")
+```
 
+I am going to manually edit this csv outside of RStudio, then read in the modified csv for models
+
+```{r}
+sum.data.e <- read.csv("./data_processed/sum.data - edited.csv", na.strings = c("", " ", "NA"))
+sum.data.e$WEEKS_IN <- sum.data.e$DAYS_IN / 7
+```
+
+
+## Negative Binomial Model 
+
+```{r, fit model}
+fit_nbinom <- glmmTMB(ABUNDANCE ~ WEEKS_IN + YEARS_INVADED + (1|LAKE), data=sum.data.e, family=nbinom2(link="log"))
+summary(fit_nbinom)
+```
+
+```{r, model diagnostics 1}
+residuals<-residuals(fit_nbinom, type = c("response", "pearson"))
+plot(residuals)
+abline(0,0)
+hist(residuals)
+```
+
+```{r, model diagnostics 2}
+res<-simulateResiduals(fit_nbinom)
+plot(res)
+
+testResiduals(res)
+
+testZeroInflation(res)
 ```
