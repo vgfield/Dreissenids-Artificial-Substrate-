@@ -1,0 +1,342 @@
+---
+title: "Ch 3 - Abundance and Lengths - June 2020"
+author: "Victoria Field"
+date: "6/3/2020"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plyr)
+library(ggplot2)
+library(lme4)
+library(car)
+library(MASS)
+library(pscl)
+library(lme4)
+library(GLMMadaptive)
+library(glmmTMB)
+library(bbmle)
+library(DHARMa)
+```
+
+# Data Read-in and Clean Up
+
+```{r}
+#read in raw data csv
+mussel.data<-read.csv("./data_raw/Summer 2019 Fieldwork - Lengths.csv", header=TRUE, colClasses=c("factor","numeric","factor","factor","factor", "numeric", "numeric"), na.strings=c("", " "))
+
+#change "BRICK" to "Sample_Month"
+colnames(mussel.data)[1] <-"SAMPLE_MONTH"
+
+#Change values in `SAMPLE_MONTH` to month names 
+mussel.data$SAMPLE_MONTH<-revalue(mussel.data$SAMPLE_MONTH, c("1"="June", "2"="July", "3"="August", "4"="September", "5"="October"))
+
+#re-order factor level for `LAKE_INV.YEAR`
+mussel.data$LAKE_INV.YEAR <- factor(mussel.data$LAKE_INV.YEAR, levels = c("Cazenovia_A - 1997", "Cazenovia_B - 1997", "Owasco - 1997", "Honeoye - 1998", "EatonBrook - 1999", "Silver - 2001", "UpperLittleYork_A - 2013", "Song - 2017"))
+
+#create new columns for `WEEKS_IN`, `MONTHS_IN`
+mussel.data$WEEKS_IN<-round(mussel.data$DAYS_IN/7,0)
+mussel.data$MONTHS_IN<-round(mussel.data$DAYS_IN/30,0)
+mussel.data$MONTHS_IN<-as.factor(mussel.data$MONTHS_IN)
+```
+
+# Data Exploration 
+
+```{r, counts df}
+#store table values as count data frame
+counts<-as.data.frame(table(mussel.data[,c("SAMPLE_MONTH", "LAKE")]))
+```
+
+```{r, sum.data dfs}
+#summarize length data by brick and lake 
+sum.data<-ddply(mussel.data, .(SAMPLE_MONTH, LAKE), summarize, 
+      COUNT = length(LENGTH_MM),
+      AVG_LENGTH = mean(LENGTH_MM), 
+      SD_LENGTH = sd(LENGTH_MM), 
+      MIN_LENGTH = min(LENGTH_MM),
+      MAX_LENGTH = max(LENGTH_MM))
+
+#add column for # / m2 (Abundance)
+sum.data$ABUNDANCE<- ((sum.data$COUNT/939) * 10000)
+
+#creating data frame with se for abundance 
+data_summary <- function(data, varname, groupnames){
+  require(plyr)
+  summary_func <- function(x, col){
+    c(mean = mean(x[[col]], na.rm=TRUE),
+      sd = sd(x[[col]], na.rm=TRUE))
+  }
+  data_sum<-ddply(data, groupnames, .fun=summary_func,
+                  varname)
+  data_sum <- rename(data_sum, c("mean" = varname))
+ return(data_sum)
+}
+
+sum.data.2 <- data_summary(sum.data, varname="ABUNDANCE", 
+                    groupnames="LAKE")
+
+sum.data.3 <- data_summary(sum.data, varname="ABUNDANCE",
+                           groupnames="SAMPLE_MONTH")
+```
+
+## Subset `mussel.data` by `LAKE`
+
+```{r subset lakes}
+CazA<-mussel.data[mussel.data$LAKE == "Cazenovia_A",]
+CazB<-mussel.data[mussel.data$LAKE == "Cazenovia_B",]
+Silver<-mussel.data[mussel.data$LAKE == "Silver",]
+Honeoye<-mussel.data[mussel.data$LAKE == "Honeoye",]
+EatonBrook<-mussel.data[mussel.data$LAKE == "EatonBrook",]
+Song<-mussel.data[mussel.data$LAKE == "Song",]
+Owasco<-mussel.data[mussel.data$LAKE == "Owasco",]
+ULY<-mussel.data[mussel.data$LAKE == "UpperLittleYork_A",]
+```
+
+## Tables 
+
+```{r}
+LengthSummaries<-ddply(mussel.data, c("LAKE", "SAMPLE_MONTH"), summarize,
+      Mean = mean(LENGTH_MM, na.rm=TRUE), 
+      Median = median(LENGTH_MM, na.rm=TRUE), 
+      Min = min(LENGTH_MM, na.rm=TRUE), 
+      Max = max(LENGTH_MM, na.rm=TRUE), 
+      SD = sd(LENGTH_MM, na.rm=TRUE))
+LengthSummaries
+write.csv(LengthSummaries, "./tables/LengthSummaries.csv")
+
+LengthSummaryByMonth<-ddply(mussel.data,  "SAMPLE_MONTH", summarize,
+      Mean = mean(LENGTH_MM, na.rm=TRUE), 
+      Median = median(LENGTH_MM, na.rm=TRUE), 
+      Min = min(LENGTH_MM, na.rm=TRUE), 
+      Max = max(LENGTH_MM, na.rm=TRUE), 
+      SD = sd(LENGTH_MM, na.rm=TRUE))
+write.csv(LengthSummaryByMonth, "./tables/LengthSummaryByMonth.csv")
+
+LengthSummaryByLake<-ddply(mussel.data,  "LAKE", summarize,
+      Mean = mean(LENGTH_MM, na.rm=TRUE), 
+      Median = median(LENGTH_MM, na.rm=TRUE), 
+      Min = min(LENGTH_MM, na.rm=TRUE), 
+      Max = max(LENGTH_MM, na.rm=TRUE), 
+      SD = sd(LENGTH_MM, na.rm=TRUE))
+write.csv(LengthSummaryByLake, "./tables/LengthSummaryByLake.csv")
+```
+
+# Plots
+
+## Plot shell lengths
+```{r shell length histograms}
+legend_title <- "Sample Month"
+
+ggplot(Silver, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/SilverLengths.png")
+
+ggplot(Honeoye, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/HoneoyeLengths.png")
+
+ggplot(EatonBrook, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/EatonBrookLengths.png")
+
+ggplot(Song, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/SongLengths.png")
+
+ggplot(Owasco, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/OwascoLengths.png")
+
+ggplot(CazA, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+ 
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/CazALengths.png")
+
+ggplot(CazB, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+ 
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/CazBLengths.png")
+
+ggplot(ULY, aes(x=LENGTH_MM))+
+  geom_histogram(fill="white", color="black", position="stack")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow = 1)+
+  ylab("Count")+
+  xlab("Shell length (mm)")+ 
+  scale_y_continuous(breaks=c(0,10, 20, 30))+ 
+  scale_x_continuous(breaks=c(5,10, 15))
+
+ggsave("./Figures/UpperLittleYorkLengths.png")
+```
+
+## Plot abundance
+```{r abundance, fig.height=18.76, fig.width=30.38}
+
+#abundance grouped by lakes (separated by deployment time)
+ggplot(sum.data, aes(x=SAMPLE_MONTH, y=ABUNDANCE))+
+  geom_col(color="black", fill="white")+
+  theme_minimal()+
+  facet_wrap(~LAKE)+
+  geom_text(aes(label = round(sum.data$ABUNDANCE)), position = position_dodge(0.9), vjust = -.5, size=10, show.legend = FALSE)+
+  ylim(0, 4000)+
+  ylab("Abundance (m2)")+
+  labs(color="SAMPLE_MONTH")+ 
+  theme(axis.text = element_text(angle = 45, size=35, color="white"), axis.title= element_text(size=35), strip.text = element_text(size=35))+ 
+  theme(panel.grid.minor = element_blank())
+
+ggsave("./Figures/Fig_3-4_Abundance_by_lake.png")
+
+#abundance grouped by brick (separated by lake)
+ggplot(sum.data, aes(x=LAKE, y=ABUNDANCE))+
+  geom_col(fill="white", color="black")+
+  theme_minimal()+
+  facet_wrap(~SAMPLE_MONTH, nrow=1)+
+  geom_text(aes(label = round(sum.data$ABUNDANCE)), position = position_dodge(0.9), vjust = -.5, size=10, show.legend = FALSE)+
+  theme(axis.text.x=element_text(angle=90, size=6))+
+  ylim(0,4000)+
+  ylab("Abundance (m2)")+
+  labs(color="Lake")+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+ggsave("./Figures/Fig_3-2_Abundance_by_deployment.png")
+
+#abundance across all bricks and lakes
+ggplot(sum.data, aes(x=ABUNDANCE)) + 
+  geom_histogram(color="black", fill="white", binwidth=250)+
+  theme_minimal()+
+  labs(title="Abundance Histogram for All Lakes and Bricks", x="Abundance (/m2)", y = "Count")
+
+ggsave("./Figures/Abundance.png")
+
+#re-order factor levels accoring to year 
+sum.data.2$LAKE<-factor(sum.data.2$LAKE, levels = c("Cazenovia_A", "Cazenovia_B", "Owasco", "Honeoye", "EatonBrook", "Silver", "UpperLittleYork_A", "Song"))
+
+#add new column with invasion year 
+sum.data.2$Invasion_Year<-c(1997, 1997, 1999, 1998, 1997, 2001, 2017, 2013)
+
+#bar plot of abundance grouped by lake and averaged across all sampling times
+ggplot(sum.data.2, aes(x=LAKE, y=ABUNDANCE)) + 
+  geom_bar(stat="identity", color="black", fill="white",
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=ABUNDANCE-sd, ymax=ABUNDANCE+sd), width=.2,
+                 position=position_dodge(.9), color="black")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+ggsave("./Figures/Fig_3-5_Avg_Abundance_Each_Lake.png")
+```
+
+```{r tukey abundance}
+#https://www.r-graph-gallery.com/84-tukey-test.html
+library(multcompView)
+ 
+# What is the effect of the treatment on the value ?
+model<-lm(sum.data$ABUNDANCE ~ sum.data$SAMPLE_MONTH)
+ANOVA<-aov(model)
+ 
+# Tukey test to study each pair of treatment :
+TUKEY <- TukeyHSD(x=ANOVA, 'sum.data$SAMPLE_MONTH', conf.level=0.95)
+ 
+# Tukey test representation :
+plot(TUKEY , las=1 , col="brown")
+```
+
+```{r boxplots, fig.height=6, fig.width=6}
+library(multcompView)
+
+# I need to group the treatments that are not different each other together.
+generate_label_df <- function(TUKEY, variable){
+ 
+     # Extract labels and factor levels from Tukey post-hoc 
+     Tukey.levels <- TUKEY[[variable]][,4]
+     Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+     
+     #I need to put the labels in the same order as in the boxplot :
+     Tukey.labels$treatment=rownames(Tukey.labels)
+     Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+     return(Tukey.labels)
+     }
+ 
+# Apply the function on my dataset
+LABELS <- generate_label_df(TUKEY , "sum.data$SAMPLE_MONTH")
+ 
+ 
+# A panel of colors to draw each group with the same color :
+my_colors <- c( 
+  rgb(143,199,74,maxColorValue = 255),
+  rgb(242,104,34,maxColorValue = 255), 
+  rgb(111,145,202,maxColorValue = 255)
+  )
+
+#start save graphic
+png("./Figures/Fig_3-3_Boxplots_Abundance.png", width=1200, height=900)
+
+# Draw the basic boxplot
+a <- boxplot(sum.data$ABUNDANCE ~ sum.data$SAMPLE_MONTH , ylim=c(min(sum.data$ABUNDANCE) , 1.1*max(sum.data$ABUNDANCE))  , ylab="Abundance" , main="", cex.lab=1.5, cex.axis=1.5)
+ 
+# I want to write the letter over each box. Over is how high I want to write it.
+over <- 0.1*max( a$stats[nrow(a$stats),] )
+ 
+#Add the labels
+text( c(1:nlevels(sum.data$SAMPLE_MONTH)) , a$stats[nrow(a$stats),]+over , LABELS[,1], cex=1.5  )
+
+dev.off()
+```
+
+# Models 
+
+## Re-organize dataframe 
+
+```{r}
+
+```
