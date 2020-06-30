@@ -349,7 +349,7 @@ sum.data.e$WEEKS_IN <- sum.data.e$DAYS_IN / 7
 ```
 
 
-## Negative Binomial Model 
+## Negative Binomial Model (Abundance)
 
 ```{r, fit model}
 fit_nbinom <- glmmTMB(ABUNDANCE ~ WEEKS_IN + YEARS_INVADED + (1|LAKE), data=sum.data.e, family=nbinom2(link="log"))
@@ -377,4 +377,28 @@ plot(res)
 testResiduals(res)
 
 testZeroInflation(res)
+```
+
+## LMER (shell length)
+
+```{r, fit model}
+l.lmer2<-lmer(LENGTH_MM ~ WEEKS_IN  + (1|LAKE) , data=mussel.data)
+
+summary(l.lmer2)
+
+Anova(l.lmer2) 
+
+# extract coefficients
+coefs <- data.frame(coef(summary(l.lmer2)))
+
+# use normal distribution to approximate p-value
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+```
+
+```{r, model diagnostics}
+plot(l.lmer2)
+qqnorm(resid(l.lmer2))
+qqline(residuals(l.lmer2))
+shapiro.test(resid(l.lmer2))
 ```
