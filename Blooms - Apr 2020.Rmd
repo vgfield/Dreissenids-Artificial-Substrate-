@@ -1,0 +1,31 @@
+---
+title: "Ch 3 Blooms"
+author: "Victoria_Field"
+date: "4/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+CSLAP<-read.csv("2019_Blooms_Ch3.csv")
+CSLAP$Sample_Date<-as.Date(CSLAP$Sample_Date, format="%m/%d/%y")
+```
+
+```{r}
+for(i in levels(CSLAP$Lake_Name)) {
+  x<-ggplot(data=CSLAP[CSLAP$Lake_Name == i,], aes(x = Sample_Date, y = FB_BGA_ug.L, color=Info_Type)) +
+      geom_point()+
+      labs(title = i,
+           subtitle = "Summer 2019",
+           fill = "Sample Type",
+           x = "Date", y = "Fluoroprobe BGA (ug/L)")+
+      theme_bw()
+  print(x)
+}
+  ggsave(x, file=paste("BGA_",i,".png"), width = 14, height = 10, units = "cm")
+}
+```
+

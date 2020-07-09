@@ -258,23 +258,8 @@ ggplot(sum.data, aes(x=ABUNDANCE)) +
   labs(title="Abundance Histogram for All Lakes and Bricks", x="Abundance (/m2)", y = "Count")
 
 ggsave("./Figures/Abundance.png")
-
-#re-order factor levels accoring to year 
-sum.data.2$LAKE<-factor(sum.data.2$LAKE, levels = c("Cazenovia_A", "Cazenovia_B", "Owasco", "Honeoye", "EatonBrook", "Silver", "UpperLittleYork_A", "Song"))
-
-#add new column with invasion year 
-sum.data.2$Invasion_Year<-c(1997, 1997, 1999, 1998, 1997, 2001, 2017, 2013)
-
-#bar plot of abundance grouped by lake and averaged across all sampling times
-ggplot(sum.data.2, aes(x=LAKE, y=ABUNDANCE)) + 
-  geom_bar(stat="identity", color="black", fill="white",
-           position=position_dodge()) +
-  geom_errorbar(aes(ymin=ABUNDANCE-sd, ymax=ABUNDANCE+sd), width=.2,
-                 position=position_dodge(.9), color="black")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
-ggsave("./Figures/Fig_3-5_Avg_Abundance_Each_Lake.png")
 ```
+
 
 ```{r tukey abundance}
 #https://www.r-graph-gallery.com/84-tukey-test.html
@@ -322,7 +307,7 @@ my_colors <- c(
 png("./Figures/Fig_3-3_Boxplots_Abundance.png", width=1200, height=900)
 
 # Draw the basic boxplot
-a <- boxplot(sum.data$ABUNDANCE ~ sum.data$SAMPLE_MONTH , ylim=c(min(sum.data$ABUNDANCE) , 1.1*max(sum.data$ABUNDANCE))  , ylab="Abundance" , main="", cex.lab=1.5, cex.axis=1.5)
+a <- boxplot(sum.data$ABUNDANCE ~ sum.data$SAMPLE_MONTH , ylim=c(min(sum.data$ABUNDANCE) , 1.1*max(sum.data$ABUNDANCE))  , ylab="Abundance" , main="", xlab= "Length of Deployment Time (weeks)" , cex.lab=1.5, cex.axis=1.5)
  
 # I want to write the letter over each box. Over is how high I want to write it.
 over <- 0.1*max( a$stats[nrow(a$stats),] )
@@ -331,6 +316,56 @@ over <- 0.1*max( a$stats[nrow(a$stats),] )
 text( c(1:nlevels(sum.data$SAMPLE_MONTH)) , a$stats[nrow(a$stats),]+over , LABELS[,1], cex=1.5  )
 
 dev.off()
+```
+
+```{r}
+# What is the effect of the treatment on the value ?
+model<-lm(sum.data$ABUNDANCE ~ sum.data$LAKE)
+ANOVA<-aov(model)
+ 
+# Tukey test to study each pair of treatment :
+TUKEY <- TukeyHSD(x=ANOVA, 'sum.data$LAKE', conf.level=0.95)
+ 
+# Tukey test representation :
+plot(TUKEY , las=1 , col="brown")
+ 
+# Apply the function on my dataset
+LABELS <- generate_label_df(TUKEY , "sum.data$LAKE")
+ 
+ 
+# A panel of colors to draw each group with the same color :
+my_colors <- c( 
+  rgb(143,199,74,maxColorValue = 255),
+  rgb(242,104,34,maxColorValue = 255), 
+  rgb(111,145,202,maxColorValue = 255)
+  )
+```
+
+```{r, fig 3-5, fig.height=7, fig.width=10}
+#re-order factor levels accoring to year 
+sum.data.2$LAKE<-factor(sum.data.2$LAKE, levels = c("Cazenovia_A", "Cazenovia_B", "Owasco", "Honeoye", "EatonBrook", "Silver", "UpperLittleYork_A", "Song"))
+
+#re-name to include year 
+sum.data.2$LAKE<-revalue(sum.data.2$LAKE, c("Cazenovia_A"= "Cazenovia A - 1997", "Cazenovia_B" = "Cazenovia B - 1997", "Owasco" = "Owasco - 1997", "Honeoye" = "Honeoye - 1998", "EatonBrook" = "Eaton Brook - 1999", "Silver" = "Silver - 2001", "UpperLittleYork_A" = "Upper Little York - 2013", "Song" = "Song - 2017"))
+
+#add new column with invasion year 
+sum.data.2$Invasion_Year<-c(1997, 1997, 1999, 1998, 1997, 2001, 2017, 2013)
+
+#bar plot of abundance grouped by lake and averaged across all sampling times
+ggplot(sum.data.2, aes(x=LAKE, y=ABUNDANCE)) + 
+  geom_bar(stat="identity", color="black", fill="white",
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=ABUNDANCE-sd, ymax=ABUNDANCE+sd), width=.2,
+                 position=position_dodge(.9), color="black")+
+  geom_text(aes(label = "a", x=LAKE, y=ABUNDANCE+sd), position = position_dodge(.9), vjust=-1)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  labs(y= expression(mussels/m^2), x = "Lake and Year of Invasion")+
+  theme(axis.text.y = element_text(size=12), axis.text.x = element_text(size=12, angle=45, hjust = 1))+
+  theme(axis.title.x = element_text(size=14, vjust = -2.5), axis.title.y = element_text(size=14, vjust = 2.5))+
+  theme(plot.margin = unit(c(1,1,1,1), "cm"))
+
+ggsave("./Figures/Fig_3-5_Avg_Abundance_Each_Lake.png")
 ```
 
 # Models 

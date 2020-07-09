@@ -1,0 +1,199 @@
+---
+title: "Poisson Chapter Three Feb 10 2020"
+author: "Victoria_Field"
+date: "2/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(ggplot2)
+library(pscl)
+library(lme4)
+library(GLMMadaptive)
+library(glmmTMB)
+library(bbmle)
+library(DHARMa)
+```
+
+```{r}
+#import sum.data.edited 
+count<-read.csv("sum.data.1.2.csv", header=TRUE, colClasses = c("numeric","factor","factor","factor", rep("numeric",7)))
+count$WEEKS_IN<-round(count$DAYS_IN/7,0)
+count$MONTHS_IN<-round(count$DAYS_IN/30,0)
+count$MONTHS_IN<-as.factor(count$MONTHS_IN)
+
+#re-order factor level for 'LAKE_INV.YEAR
+count$LAKE_INV.YEAR <- factor(count$LAKE_INV.YEAR, levels = c("Crooked - Not Invaded", "Tully - Not Invaded", "Cazenovia_A - 1997", "Cazenovia_B - 1997", "Owasco - 1997", "Honeoye - 1998", "EatonBrook - 1999", "Silver - 2001", "Craine - 2007", "UpperLittleYork_A - 2013", "Song - 2017"))
+```
+
+#Distribution of the Abundance Count 
+
+```{r}
+summary(count$Count)
+plot(count$Count~count$WEEKS_IN)
+hist(count$Count, breaks=10)
+hist(log(count$Count))
+```
+
+#Poisson Model for Abundance (from: https://online.stat.psu.edu/stat504/node/169/)
+```{r}
+model<-glmer(Count ~ DAYS_IN + Years_Invaded + Dreissenids + (1|LAKE), family=poisson(link=log), data=count)
+summary(model)
+```
+
+```{r}
+model2<-glmer(Count ~ WEEKS_IN  + (1|LAKE), family=poisson(link=log), data=count)
+summary(model2)
+```
+
+You can also get the predicted count for each observation and the linear predictor values from R output by using specific statements such as:
+
+```{r}
+#to get the predicted count for each observation: 
+#e.g. for the first observation E(y1)=3.810
+
+print<-data.frame(count, pred=model$fitted)
+print
+
+#note the linear predictor values
+
+model$linear.predictors
+exp(model$linear.predictors)
+```
+
+Interpretations: 
+-Standard error of beta=0.045 is 0.0027
+
+-Slope of beta is statistically significant with z-value=16.57 and a p-value of <2e-16
+
+-We can also see that although the predictor is significant the model does not fit well. Given the value of the residual deviance statistic of 4296.9 with 49 df, the p-value is zero and the Value/DF=4296.9/49=87.69 is much bigger than 1, so the model does not fit well. The lack of fit maybe due to missing data, covariates or overdispersion.
+
+  -Let us assume for now that we do not have any other covariates, and try to adjust for overdispersion to see if we can improve the model fit.
+  
+##Change the Model: Adjusting for Overdispersion
+
+In the above model we detect a potential problem with overdispersion since the scale factor, e.g., Value/DF for the residual deviance/df, is much greater than 1. 
+
+```{r}
+#First, look at sample means and variance 
+tapply(count$Count, count$MONTHS_IN, function(x)c(mean=mean(x),variance=var(x)))
+```
+
+```{r}
+#Estimate dispersion factor using quasipoisson family 
+
+model.disp<-glm(count$Count~count$MONTHS_IN, family=quasipoisson(link=log), data=count)
+summary.glm(model.disp)
+summary.glm(model.disp)$dispersion
+```
+
+```{r}
+#Estimate the dispersion factor using negative binomial 
+
+nb.fit<-glm(count$Count~count$MONTHS_IN, data=count, family=negative.binomial(theta=1, link="identity"), start=model$coef)
+summary(nb.fit)
+
+```
+
+What could be another reason for poor fit besides overdispersion? How about missing other explanatory variables? Can we improve the fit by adding other variables?
+
+##Change the Model: Include ‘LAKE’ as a Qualitative Predictor
+
+#GLM with poisson family (from:https://www.statmethods.net/advstats/glm.html)
+
+```{r}
+fit<-glm(Count ~ WEEKS_IN + Years_Invaded, data=count, family=poisson(link="log"))
+summary(fit)
+```
+
+#Zero-inflated Poisson regression (from https://stats.idre.ucla.edu/r/dae/zinb/)
+
+```{r}
+m1 <- zeroinfl(Count ~ WEEKS_IN | Dreissenids,
+  data = count, dist = "negbin", EM = TRUE)
+summary(m1)
+```
+
+#Zero-inflated Poisson regression (from https://www.r-bloggers.com/zero-inflated-poisson-and-negative-binomial-models-with-glmmadaptive/)
+
+```{r}
+zi.mm<-mixed_model(Count ~ WEEKS_IN, random = ~ 1 | LAKE, data = count,
+                   family = poisson())
+zi.mm
+```
+
+#Zero-Inflated Poisson MEM 
+
+```{r}
+fit_zipoisson <- glmmTMB(Count ~ WEEKS_IN + Years_Invaded + (1|LAKE), data=count, ziformula= ~ Dreissenids, family=poisson(link="log"))
+summary(fit_zipoisson)
+```
+
+```{r}
+fit_zinbinom <- update(fit_zipoisson,family=nbinom2)
+summary(fit_zinbinom)
+
+fit_zinbinom1 <- update(fit_zipoisson,family=nbinom1)
+summary(fit_zinbinom1)
+
+AICtab(fit_zipoisson,fit_zinbinom)
+```
+
+```{r}
+ziresiduals<-residuals(fit_zinbinom, type = c("response", "pearson"))
+plot(ziresiduals)
+abline(0,0)
+```
+
+##Model Diagnostics
+```{r}
+zires<-simulateResiduals(fit_zinbinom)
+plot(zires)
+
+testResiduals(zires)
+```
+
+##No zero-inflated 
+
+```{r}
+fit_poisson <- glmmTMB(Count ~ WEEKS_IN + Years_Invaded + (1|LAKE), data=count, family=poisson(link="log"))
+summary(fit_poisson)
+
+fit_nbinom <- update(fit_poisson,family=nbinom2)
+summary(fit_nbinom)
+
+fit_nbinom1 <- update(fit_poisson,family=nbinom1)
+summary(fit_nbinom1)
+
+AICtab(fit_poisson,fit_nbinom, fit_nbinom1)
+```
+
+```{r}
+fixef(fit_nbinom) #pulls fixed effect coefficients
+
+exp(0.07973) # equals 1.083; increasing `WEEKS_IN` by 1 multiplies the mean value of `Count` by 1.083
+exp(0.25161) # equals 1.286; increasing `YEARS_INVADED` by 1 multiplies the mean value of `Count` by 1.286
+```
+
+##Model Diagnostics
+```{r}
+residuals<-residuals(fit_nbinom, type = c("response", "pearson"))
+plot(residuals)
+abline(0,0)
+hist(residuals)
+```
+
+```{r}
+res<-simulateResiduals(fit_nbinom)
+plot(res)
+
+testResiduals(res)
+
+testZeroInflation(res)
+```
+
+```{r}
+summary(lm(count$Abundance_m2 ~ count$WEEKS_IN))
+```

@@ -1,0 +1,52 @@
+DAYS_IN,LAKE,Dreissenids,LAKE_INV.YEAR,Years_Invaded,Count,Avg_length,StdDev_length,Min_length,Max_length,Abundance_m2
+32,Cazenovia_A,Invaded,Cazenovia_A - 1997,22,1,11.90,NA,11.9,11.9,12
+54,Cazenovia_A,Invaded,Cazenovia_A - 1997,22,13,10.16,2.57,3.67,13.03,150
+82,Cazenovia_A,Invaded,Cazenovia_A - 1997,22,8,7.83,3.14,2.79,11.74,92
+152,Cazenovia_A,Invaded,Cazenovia_A - 1997,22,163,4.02,1.54,1.31,13.09,1878
+32,Cazenovia_B,Invaded,Cazenovia_B - 1997,22,0,NA,NA,NA,NA,0
+54,Cazenovia_B,Invaded,Cazenovia_B - 1997,22,4,9.49,1.29,7.87,11.01,46
+82,Cazenovia_B,Invaded,Cazenovia_B - 1997,22,1,16.32,NA,16.32,16.32,12
+152,Cazenovia_B,Invaded,Cazenovia_B - 1997,22,207,4.27,2.00,1.3,16.89,2385
+28,Craine,Invaded,Craine - 2007,12,0,NA,NA,NA,NA,0
+55,Craine,Invaded,Craine - 2007,12,0,NA,NA,NA,NA,0
+85,Craine,Invaded,Craine - 2007,12,0,NA,NA,NA,NA,0
+119,Craine,Invaded,Craine - 2007,12,0,NA,NA,NA,NA,0
+145,Craine,Invaded,Craine - 2007,12,0,NA,NA,NA,NA,0
+29,Crooked,Uninvaded,Crooked - Not Invaded,0,0,NA,NA,NA,NA,0
+56,Crooked,Uninvaded,Crooked - Not Invaded,0,0,NA,NA,NA,NA,0
+86,Crooked,Uninvaded,Crooked - Not Invaded,0,0,NA,NA,NA,NA,0
+120,Crooked,Uninvaded,Crooked - Not Invaded,0,0,NA,NA,NA,NA,0
+151,Crooked,Uninvaded,Crooked - Not Invaded,0,0,NA,NA,NA,NA,0
+28,EatonBrook,Invaded,EatonBrook - 1999,20,30,8.80,3.92,2.01,15.04,346
+55,EatonBrook,Invaded,EatonBrook - 1999,20,208,9.94,3.81,2.96,18.19,2396
+85,EatonBrook,Invaded,EatonBrook - 1999,20,136,9.29,2.65,1.1,14.79,1567
+119,EatonBrook,Invaded,EatonBrook - 1999,20,161,7.83,4.57,0.99,17.93,1855
+145,EatonBrook,Invaded,EatonBrook - 1999,20,206,7.17,4.00,1.42,20.38,2373
+31,Honeoye,Invaded,Honeoye - 1998,21,213,10.34,2.86,2.68,16.84,2454
+55,Honeoye,Invaded,Honeoye - 1998,21,72,10.79,2.56,5.94,17.51,829
+92,Honeoye,Invaded,Honeoye - 1998,21,144,8.36,4.80,0.86,17.45,1659
+118,Honeoye,Invaded,Honeoye - 1998,21,124,9.26,4.30,1.21,17.08,1429
+150,Honeoye,Invaded,Honeoye - 1998,21,86,8.59,3.50,1.55,17.44,991
+39,Owasco,Invaded,Owasco - 1997,22,41,5.13,1.85,1.88,9.82,472
+53,Owasco,Invaded,Owasco - 1997,22,32,6.61,1.87,3.6,9.82,369
+83,Owasco,Invaded,Owasco - 1997,22,71,6.70,4.07,0.86,14.7,818
+133,Owasco,Invaded,Owasco - 1997,22,86,8.87,4.03,2.69,16.57,991
+28,Silver,Invaded,Silver - 2001,18,56,9.34,3.32,2.02,15.87,645
+63,Silver,Invaded,Silver - 2001,18,88,9.66,3.43,3.03,16.1,1014
+83,Silver,Invaded,Silver - 2001,18,199,10.70,3.26,3.51,18.52,2293
+131,Silver,Invaded,Silver - 2001,18,77,11.56,3.14,4.4,18.35,887
+150,Silver,Invaded,Silver - 2001,18,110,11.00,4.24,1.11,17.76,1267
+29,Song,Invaded,Song - 2017,2,46,7.68,1.97,2.64,11.85,530
+56,Song,Invaded,Song - 2017,2,33,10.03,2.06,5.7,15.49,380
+86,Song,Invaded,Song - 2017,2,67,11.00,2.11,6.09,15.32,772
+120,Song,Invaded,Song - 2017,2,67,11.50,2.79,2.78,18.59,772
+151,Song,Invaded,Song - 2017,2,62,11.11,3.48,1.06,15.97,714
+29,Tully,Uninvaded,Tully - Not Invaded,0,0,NA,NA,NA,NA,0
+56,Tully,Uninvaded,Tully - Not Invaded,0,0,NA,NA,NA,NA,0
+86,Tully,Uninvaded,Tully - Not Invaded,0,0,NA,NA,NA,NA,0
+120,Tully,Uninvaded,Tully - Not Invaded,0,0,NA,NA,NA,NA,0
+151,Tully,Uninvaded,Tully - Not Invaded,0,0,NA,NA,NA,NA,0
+30,UpperLittleYork_A,Invaded,UpperLittleYork_A - 2013,6,150,6.86,1.66,3.24,10.31,1728
+62,UpperLittleYork_A,Invaded,UpperLittleYork_A - 2013,6,177,8.13,2.28,2.23,13.23,2039
+122,UpperLittleYork_A,Invaded,UpperLittleYork_A - 2013,6,146,9.29,2.57,3.78,15.25,1682
+152,UpperLittleYork_A,Invaded,UpperLittleYork_A - 2013,6,233,9.64,2.75,1.93,16.56,2684

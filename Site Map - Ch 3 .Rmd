@@ -1,0 +1,25 @@
+---
+title: "Site Map - Ch 3"
+author: "Victoria_Field"
+date: "4/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggmap)
+library(maps)
+library(mapdata)
+```
+
+```{r}
+sites<-read.csv("Chapter Two Lake Locations from CSLAP.csv")
+
+png("Ch 3 Site Map.png", width=600, height=500)
+map("state","New York", xlim=c(-80, -72), ylim=c(40, 45), col="gray90", fill=TRUE)
+points(sites$Longitude, sites$Latitude, pch=19, col="red", cex=0.5)
+dev.off()
+
+```
+
+
